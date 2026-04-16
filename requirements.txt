@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+streamlit
+requests
+beautifulsoup4
+spacy
+newspaper3k
+python-dotenv
+sentence-transformers
+scikit-learn
+transformers
+torch
+tldextract
+google-genai
+openai
+lxml_html_clean
