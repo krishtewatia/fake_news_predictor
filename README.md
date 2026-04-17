@@ -1,239 +1,119 @@
-# 🔍 Fake News Detection Pipeline
+# 🔍 AI-Powered Fake News Detection Pipeline
 
-A **hybrid AI + ML pipeline** that detects fake news by analyzing text or article URLs. The system extracts claims, searches for corroborating evidence, evaluates source credibility, and delivers a verdict — **REAL**, **LIKELY FAKE**, or **UNCERTAIN** — powered by NLP models and Google Gemini.
+A sophisticated **Hybrid AI + Machine Learning pipeline** designed to verify factual claims and detect misinformation. The system analyzes raw text or article URLs through a multi-stage NLP process, cross-references with real-time web evidence, and delivers a reasoned verdict powered by **Deep Learning** and **Large Language Models**.
 
 ---
 
-## ✨ Features
+## 🚀 How It Works (The Pipeline)
 
-- **Multi-stage detection pipeline** — 14 modular steps from input to verdict
-- **Claim extraction** — spaCy-based NLP to identify factual claims
-- **Web evidence search** — Dual-source search via NewsAPI + SerpAPI
-- **Semantic similarity** — sentence-transformers (`all-MiniLM-L6-v2`) for claim-evidence matching
-- **Stance detection** — HuggingFace NLI (`facebook/bart-large-mnli`) to classify evidence as SUPPORTS / REFUTES / NEUTRAL
-- **Source credibility scoring** — Domain-based trust tiers
-- **Hybrid scoring system** — Weighted combination of similarity, stance, and credibility
-- **Gemini-powered explanation** — Natural language reasoning via Google Gemini API
-- **FastAPI backend** — Async REST API with Pydantic models
-- **Streamlit frontend** — Clean, minimal UI with color-coded verdicts
-- **Caching system** — File-based JSON cache with 24-hour TTL
+The detector operates through a modular 14-stage pipeline that ensures rigorous cross-validation of information:
+
+### 1. Ingestion & Analysis
+*   **Input Layer:** Ingests raw text or fetches article content from URLs using `newspaper3k` and `BeautifulSoup4`.
+*   **Claim Extraction:** Uses `spaCy` to identify factual, non-subjective sentences. It scores sentences based on named entities, numeric data, and verb density to extract the most verifiable claims.
+
+### 2. Evidence Gathering
+*   **Query Generation:** Transforms extracted claims into optimized search queries using **Gemini 2.0 Flash** via OpenRouter.
+*   **Web Search:** Conducts real-time searches across **NewsAPI** and **SerpAPI (Google Search)** to find corroborating or refuting articles.
+*   **Evidence Collection:** Scrapes content from search results to build a local dataset for verification.
+
+### 3. Verification & Scoring
+*   **Semantic Similarity:** Applies the `all-MiniLM-L6-v2` Sentence-Transformer model to compute cosine similarity between the claim and collected evidence.
+*   **Stance Detection:** Utilizes a **BART-Large-MNLI** model (Zero-Shot Classification) to determine if each piece of evidence **Supports**, **Refutes**, or is **Neutral** toward the claim.
+*   **Source Credibility:** Assigns trust scores to sources based on domain reputation (e.g., BBC vs. unknown blogs).
+*   **Hybrid Scorer:** Combines similarity, stance, and credibility into a unified trust metric for every piece of evidence.
+
+### 4. Verdict & Reasoning
+*   **Aggregation:** Computes a weighted average of all evidence scores.
+*   **Verdict Engine:** Classifies the final result as **REAL**, **LIKELY FAKE**, or **UNCERTAIN** based on statistical thresholds.
+*   **AI Explanation:** Uses **Gemini** to generate a natural language explanation of *why* the verdict was reached, citing specific evidence patterns.
+
+---
+
+## 🛠️ Frameworks & Libraries
+
+This project leverages state-of-the-art Python libraries for NLP and web services:
+
+| Layer | Framework/Library | Purpose |
+| :--- | :--- | :--- |
+| **Backend** | **FastAPI** | High-performance, asynchronous REST API. |
+| **Frontend** | **Streamlit** | Interactive dashboard for user input and visualization. |
+| **NLP Core** | **spaCy** (`en_core_web_sm`) | Sentence tokenization and entity extraction. |
+| **Deep Learning** | **HuggingFace Transformers** | Running the BART model for NLI/Stance detection. |
+| **Embeddings** | **Sentence-Transformers** | Generating semantic vectors for similarity comparison. |
+| **Scraping** | **newspaper3k** / **BS4** | Robust article extraction and HTML parsing. |
+| **Validation** | **Pydantic v2** | Strict data modeling and request validation. |
+
+---
+
+## 📡 External APIs
+
+The system integrates several external services to provide real-time accuracy:
+
+1.  **OpenRouter (Gemini 2.0 Flash):**
+    *   *Purpose:* Query optimization and natural language explanation generation.
+    *   *Why:* Provides high-speed, cost-effective LLM reasoning.
+2.  **NewsAPI:**
+    *   *Purpose:* Sourcing recent news articles from thousands of verified global publishers.
+3.  **SerpAPI:**
+    *   *Purpose:* Accessing Google Search results to find evidence in the broader web index.
 
 ---
 
 ## 📁 Project Structure
 
-```
+```text
 fake_news_detector/
 ├── pipeline/
-│   ├── __init__.py
-│   ├── input_layer.py          # Text/URL ingestion & cleaning
-│   ├── claim_extractor.py      # Factual claim extraction
-│   ├── query_generator.py      # Search query generation
-│   ├── web_search.py           # NewsAPI & SerpAPI search
-│   ├── evidence_collector.py   # Evidence text collection
-│   ├── semantic_similarity.py  # Claim-evidence similarity
-│   ├── evidence_ranker.py      # Evidence filtering & ranking
-│   ├── stance_detector.py      # NLI-based stance detection
-│   ├── credibility_scorer.py   # Domain trust scoring
-│   ├── hybrid_scorer.py        # Final hybrid score computation
-│   ├── aggregator.py           # Result aggregation
-│   ├── verdict.py              # Verdict generation
-│   ├── explainer.py            # LLM-powered explanation
-│   ├── llm_client.py           # Google Gemini API client
-│   └── cache.py                # File-based JSON cache
-├── app.py                      # Streamlit frontend
-├── main.py                     # FastAPI backend
-├── config.py                   # Environment variable config
-├── requirements.txt            # Python dependencies
-├── .env.example                # Environment variable template
-└── README.md
+│   ├── input_layer.py          # Data ingestion & cleaning
+│   ├── claim_extractor.py      # NLP-based factual claim identification
+│   ├── query_generator.py      # LLM-assisted search optimization
+│   ├── web_search.py           # Multi-source API integration
+│   ├── evidence_collector.py   # Article scraping & snippet extraction
+│   ├── semantic_similarity.py  # MiniLM-based vector comparison
+│   ├── stance_detector.py      # BART NLI classification
+│   ├── credibility_scorer.py   # Domain trust-based weighting
+│   ├── hybrid_scorer.py        # Final score calculation logic
+│   ├── verdict.py              # Statistical decision engine
+│   └── explainer.py            # Natural language reasoning
+├── main.py                     # FastAPI server & pipeline orchestration
+├── app.py                      # Streamlit UI
+└── requirements.txt            # System dependencies
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## ⚙️ Installation & Setup
 
-| Layer | Technology |
-|-------|-----------|
-| **Language** | Python 3.10+ |
-| **Backend** | FastAPI, Uvicorn |
-| **Frontend** | Streamlit |
-| **NLP** | spaCy (`en_core_web_sm`) |
-| **Stance Detection** | HuggingFace Transformers (`facebook/bart-large-mnli`) |
-| **Semantic Similarity** | Sentence Transformers (`all-MiniLM-L6-v2`) |
-| **LLM** | Google Gemini API (`gemini-1.5-flash`) |
-| **Web Scraping** | BeautifulSoup4, newspaper3k |
-| **Search APIs** | NewsAPI, SerpAPI |
-| **Domain Parsing** | tldextract |
+### 1. Prerequisites
+*   Python 3.10 or higher
+*   Virtual environment (recommended)
 
----
-
-## 🚀 Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/fake-news-detector.git
-cd fake-news-detector
-```
-
-### 2. Create a virtual environment
-
-```bash
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# macOS/Linux
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-
+### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
-```
-
-### 4. Download the spaCy model
-
-```bash
 python -m spacy download en_core_web_sm
 ```
 
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file in the project root (use `.env.example` as a template):
-
+### 3. Environment Configuration
+Create a `.env` file in the root directory:
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
-NEWSAPI_KEY=your_newsapi_key_here
-SERPAPI_KEY=your_serpapi_key_here
+OPEN_ROUTER_KEY=your_key_here
+NEWSAPI_KEY=your_key_here
+SERPAPI_KEY=your_key_here
 ```
 
-| Variable | Source | Required |
-|----------|--------|----------|
-| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) | ✅ |
-| `NEWSAPI_KEY` | [NewsAPI.org](https://newsapi.org/) | ✅ |
-| `SERPAPI_KEY` | [SerpAPI.com](https://serpapi.com/) | ✅ |
-
----
-
-## ▶️ How to Run
-
-### Start the Backend
-
+### 4. Running the Application
+**Terminal 1 (Backend):**
 ```bash
 uvicorn main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`
-
-### Start the Frontend
-
+**Terminal 2 (Frontend):**
 ```bash
 streamlit run app.py
 ```
 
-The UI will open at `http://localhost:8501`
-
-> **Note:** Both the backend and frontend must be running simultaneously. Use two separate terminal windows.
-
----
-
-## 📡 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/check` | Run the full fake news detection pipeline |
-| `GET` | `/health` | Health check |
-| `GET` | `/cache/clear` | Clear the results cache |
-
-### Interactive Docs
-
-Once the backend is running, visit:
-- **Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc:** `http://localhost:8000/redoc`
-
----
-
-## 📝 Example Usage
-
-### Request
-
-```bash
-curl -X POST http://localhost:8000/check \
-  -H "Content-Type: application/json" \
-  -d '{"text": "NASA confirmed that an asteroid will hit Earth in 2025."}'
-```
-
-### Response
-
-```json
-{
-  "verdict": "LIKELY FAKE",
-  "confidence": 0.82,
-  "explanation": "Multiple credible sources, including NASA's official channels, have not issued any such confirmation. The claim appears to be fabricated and contradicts verified astronomical data.",
-  "claims": [
-    "NASA confirmed that an asteroid will hit Earth in 2025."
-  ],
-  "evidence": [
-    {
-      "url": "https://www.reuters.com/...",
-      "domain": "reuters.com",
-      "title": "Fact Check: No asteroid threat confirmed by NASA",
-      "text": "NASA has not confirmed any asteroid impact...",
-      "similarity_score": 0.78,
-      "stance": "REFUTES",
-      "confidence": 0.91,
-      "credibility_score": 0.9,
-      "final_score": -0.12
-    }
-  ]
-}
-```
-
----
-
-## 🖼️ Screenshots
-
-<!-- Add screenshots of the Streamlit UI here -->
-
-> _Screenshots coming soon._
-
----
-
-## 🔮 Future Improvements
-
-- 🧠 **Fine-tuned models** — Train custom models on fake news datasets for higher accuracy
-- ⚡ **Real-time fact-checking** — Live monitoring of trending news and social media
-- 🌐 **Browser extension** — One-click fact-checking directly in the browser
-- 🗄️ **Database integration** — Replace file-based cache with Redis or PostgreSQL
-- 🌍 **Multilingual support** — Extend pipeline to support multiple languages
-- 📊 **Dashboard analytics** — Track trends in misinformation over time
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**.
-
-```
-MIT License
-
-Copyright (c) 2026
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
