@@ -13,15 +13,20 @@ nli_pipeline = pipeline(
     model="facebook/bart-large-mnli",
 )
 
-# NLI label mapping to stance labels
-LABEL_TO_STANCE = {
-    "entailment": "SUPPORTS",
-    "contradiction": "REFUTES",
-    "neutral": "NEUTRAL",
-}
+# Candidate labels for zero-shot classification — these labels must form
+# natural sentences when inserted into the hypothesis_template via {}.
+CANDIDATE_LABELS = [
+    "supports this claim",
+    "contradicts this claim",
+    "is unrelated to this claim",
+]
 
-# Candidate labels for zero-shot classification
-NLI_LABELS = ["entailment", "contradiction", "neutral"]
+# Map the candidate labels back to pipeline stance labels
+LABEL_TO_STANCE = {
+    "supports this claim": "SUPPORTS",
+    "contradicts this claim": "REFUTES",
+    "is unrelated to this claim": "NEUTRAL",
+}
 
 
 def classify_stance(premise: str, hypothesis: str) -> tuple[str, float]:
@@ -38,8 +43,9 @@ def classify_stance(premise: str, hypothesis: str) -> tuple[str, float]:
     try:
         result = nli_pipeline(
             premise,
-            candidate_labels=NLI_LABELS,
-            hypothesis_template="This text {} the claim: " + hypothesis,
+            candidate_labels=CANDIDATE_LABELS,
+            hypothesis_template="This text {}.",
+            multi_label=False,
         )
 
         top_label = result["labels"][0]

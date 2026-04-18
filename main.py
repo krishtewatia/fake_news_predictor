@@ -162,24 +162,30 @@ async def check_news(request: CheckRequest):
         # ── 11. Aggregation ──────────────────────────────────────────────
         agg = aggregate_results(evidence_list)
 
-        # ── 12. Verdict ──────────────────────────────────────────────────
+        # ── 12. Verdict (mechanical — may be overridden by LLM) ────────
         verdict_result = generate_verdict(
             score=agg["final_score"],
             support_count=agg["support_count"],
             refute_count=agg["refute_count"],
         )
 
-        # ── 13. Explanation ──────────────────────────────────────────────
-        explanation = generate_explanation(
+        # ── 13. LLM Arbiter — corrects verdict + generates explanation ──
+        llm_result = generate_explanation(
             claim=primary_claim,
             evidence=evidence_list,
             verdict=verdict_result["verdict"],
         )
 
+        # The LLM acts as the final arbiter: its verdict overrides the
+        # mechanical pipeline's verdict since it can reason about context.
+        final_verdict = llm_result["verdict"]
+        final_confidence = llm_result["confidence"]
+        explanation = llm_result["explanation"]
+
         # ── Build Response ───────────────────────────────────────────────
         response_data = {
-            "verdict": verdict_result["verdict"],
-            "confidence": verdict_result["confidence"],
+            "verdict": final_verdict,
+            "confidence": final_confidence,
             "explanation": explanation,
             "claims": claims,
             "evidence": [
