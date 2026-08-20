@@ -26,10 +26,12 @@ def generate_verdict(score: float, support_count: int, refute_count: int) -> dic
     verdict = "UNCERTAIN"
     confidence = 0.0
     reasoning = ""
+    total_votes = max(support_count + refute_count, 1)
+    vote_margin = abs(support_count - refute_count) / total_votes
 
     if score > 0.65 and support_count >= refute_count:
         verdict = "REAL"
-        confidence = round(min(score, 1.0), 4)
+        confidence = round(max(0.5, min(1.0, 0.55 + 0.35 * score + 0.10 * vote_margin)), 4)
         reasoning = (
             f"The claim is supported by {support_count} source(s) with a "
             f"high aggregated score of {score:.2f}. Evidence strongly aligns "
@@ -38,7 +40,7 @@ def generate_verdict(score: float, support_count: int, refute_count: int) -> dic
 
     elif score < 0.35 or refute_count > support_count * 2:
         verdict = "LIKELY FAKE"
-        confidence = round(min(abs(1.0 - score), 1.0), 4)
+        confidence = round(max(0.5, min(1.0, 0.55 + 0.35 * (1.0 - score) + 0.10 * vote_margin)), 4)
         reasoning = (
             f"The claim is contradicted by {refute_count} source(s) with a "
             f"low aggregated score of {score:.2f}. Evidence suggests the claim "
@@ -47,7 +49,7 @@ def generate_verdict(score: float, support_count: int, refute_count: int) -> dic
 
     else:
         verdict = "UNCERTAIN"
-        confidence = round(1.0 - abs(score - 0.5), 4)
+        confidence = round(max(0.0, min(1.0, 0.35 + 0.25 * (1.0 - abs(score - 0.5) * 2) + 0.10 * (1.0 - vote_margin))), 4)
         reasoning = (
             f"The evidence is mixed — {support_count} supporting and "
             f"{refute_count} refuting source(s) with a score of {score:.2f}. "

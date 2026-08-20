@@ -15,21 +15,14 @@ nli_pipeline = pipeline(
 
 # Candidate labels for zero-shot classification — these labels must form
 # natural sentences when inserted into the hypothesis_template via {}.
-CANDIDATE_LABELS = [
-    "supports this claim",
-    "contradicts this claim",
-    "is unrelated to this claim",
-]
-
-# Map the candidate labels back to pipeline stance labels
-LABEL_TO_STANCE = {
-    "supports this claim": "SUPPORTS",
-    "contradicts this claim": "REFUTES",
-    "is unrelated to this claim": "NEUTRAL",
+CANDIDATE_TEMPLATES = {
+    "SUPPORTS": "supports the claim that {}",
+    "REFUTES": "contradicts the claim that {}",
+    "NEUTRAL": "is unrelated to the claim that {}",
 }
 
 
-def classify_stance(premise: str, hypothesis: str) -> tuple[str, float]:
+def classify_stance(premise: str, claim: str) -> tuple[str, float]:
     """
     Classify the stance of a premise towards a hypothesis using NLI.
 
@@ -41,17 +34,20 @@ def classify_stance(premise: str, hypothesis: str) -> tuple[str, float]:
         Tuple of (stance, confidence) where stance is SUPPORTS/REFUTES/NEUTRAL.
     """
     try:
+        candidate_labels = [template.format(claim) for template in CANDIDATE_TEMPLATES.values()]
+        label_lookup = {template.format(claim): stance for stance, template in CANDIDATE_TEMPLATES.items()}
+
         result = nli_pipeline(
             premise,
-            candidate_labels=CANDIDATE_LABELS,
-            hypothesis_template="This text {}.",
+            candidate_labels=candidate_labels,
+            hypothesis_template="This evidence {}.",
             multi_label=False,
         )
 
         top_label = result["labels"][0]
         top_score = result["scores"][0]
 
-        stance = LABEL_TO_STANCE.get(top_label, "NEUTRAL")
+        stance = label_lookup.get(top_label, "NEUTRAL")
         return stance, round(float(top_score), 4)
 
     except Exception as e:

@@ -76,9 +76,15 @@ def parse_llm_response(response: str) -> dict | None:
         verdict = data.get("verdict", "").upper().strip()
         if verdict not in ("REAL", "LIKELY FAKE", "UNCERTAIN"):
             return None
+        confidence = data.get("confidence", 0.5)
+        try:
+            confidence = float(confidence)
+        except (TypeError, ValueError):
+            confidence = 0.5
+        confidence = max(0.0, min(1.0, confidence))
         return {
             "verdict": verdict,
-            "confidence": float(data.get("confidence", 0.5)),
+            "confidence": confidence,
             "explanation": data.get("explanation", ""),
         }
     except (json.JSONDecodeError, ValueError, TypeError):
@@ -101,7 +107,7 @@ def generate_explanation(claim: str, evidence: list[dict], verdict: str) -> dict
     if not claim:
         return {
             "verdict": verdict,
-            "confidence": 0.5,
+            "confidence": 0.0,
             "explanation": "Insufficient information to generate an explanation.",
         }
 
@@ -112,15 +118,32 @@ def generate_explanation(claim: str, evidence: list[dict], verdict: str) -> dict
     if parsed and parsed["explanation"]:
         return parsed
 
-    # Fallback: return the pipeline verdict with a generic explanation
+    # Fallback: derive confidence from evidence strength instead of using a flat 0.5.
     support = sum(1 for e in evidence if e.get("stance") == "SUPPORTS")
     refute = sum(1 for e in evidence if e.get("stance") == "REFUTES")
+    neutral = sum(1 for e in evidence if e.get("stance") == "NEUTRAL")
+    total = max(len(evidence), 1)
+
+    support_ratio = support / total
+    refute_ratio = refute / total
+    decisive_ratio = abs(support_ratio - refute_ratio)
+    coverage = 1.0 - (neutral / total)
+
+    if verdict == "REAL":
+        confidence = 0.55 + (0.35 * decisive_ratio) + (0.10 * support_ratio)
+    elif verdict == "LIKELY FAKE":
+        confidence = 0.55 + (0.35 * decisive_ratio) + (0.10 * refute_ratio)
+    else:
+        confidence = 0.35 + (0.25 * coverage) + (0.15 * (1.0 - decisive_ratio))
+
+    confidence = round(max(0.0, min(1.0, confidence)), 4)
     return {
         "verdict": verdict,
-        "confidence": 0.5,
+        "confidence": confidence,
         "explanation": (
             f"The claim was evaluated against {len(evidence)} source(s). "
             f"{support} source(s) support and {refute} source(s) refute the claim. "
+            f"{neutral} source(s) were neutral. "
             f"Verdict: {verdict}."
         ),
     }

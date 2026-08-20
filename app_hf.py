@@ -1,16 +1,17 @@
 """
-Fake News Detector — Streamlit Frontend
------------------------------------------
-Clean, minimal UI for the fake news detection pipeline.
+Fake News Detector — Streamlit Frontend (Hugging Face Spaces Compatible)
+Modified to work with local backend on HF Spaces
 """
 
 import streamlit as st
 import requests
+import os
 import html
 
 # ── Config ───────────────────────────────────────────────────────────────────
 
-API_URL = "http://localhost:8000"
+# For HF Spaces, use localhost. The backend runs on the same container.
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 VERDICT_COLORS = {
     "REAL": "#10B981",
@@ -296,7 +297,7 @@ if submitted:
                             )
 
             except requests.exceptions.ConnectionError:
-                st.error("Cannot connect to the backend. Make sure the API is running at http://localhost:8000")
+                st.error("⚠️ Backend is not responding. It may be loading. Please wait a moment and try again.")
             except requests.exceptions.Timeout:
                 st.error("Request timed out. The analysis is taking too long.")
             except Exception as e:

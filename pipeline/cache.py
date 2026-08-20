@@ -14,6 +14,7 @@ CACHE_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cache.jso
 
 # Time-to-live in seconds (24 hours)
 TTL_SECONDS = 24 * 60 * 60
+CACHE_VERSION = 2
 
 
 def _load_cache() -> dict:
@@ -58,7 +59,8 @@ def _make_key(claim: str) -> str:
     Returns:
         MD5 hex digest string.
     """
-    return hashlib.md5(claim.strip().lower().encode("utf-8")).hexdigest()
+    raw = f"v{CACHE_VERSION}:{claim.strip().lower()}"
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
 
 def get(claim: str) -> dict | None:

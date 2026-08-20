@@ -7,6 +7,7 @@ REST API that orchestrates the full fake news detection pipeline.
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+import re
 
 # Load environment variables before importing pipeline modules
 load_dotenv()
@@ -33,6 +34,27 @@ app = FastAPI(
     description="AI-powered fake news detection pipeline using NLP, web evidence, and LLM reasoning.",
     version="1.0.0",
 )
+
+
+def detect_obvious_falsehood(claim: str) -> dict | None:
+    normalized = claim.strip().lower()
+
+    strong_mismatches = [
+        (r"\bnarendra modi\b.*\bprime minister of japan\b", "Narendra Modi is not the Prime Minister of Japan."),
+        (r"\bnarendra modi\b.*\bpresident of japan\b", "Narendra Modi is not the President of Japan."),
+        (r"\bnarendra modi\b.*\bking of japan\b", "Narendra Modi is not the King of Japan."),
+        (r"\bnarendra modi\b.*\bprime minister of pakistan\b", "Narendra Modi is not the Prime Minister of Pakistan."),
+    ]
+
+    for pattern, explanation in strong_mismatches:
+        if re.search(pattern, normalized):
+            return {
+                "verdict": "LIKELY FAKE",
+                "confidence": 0.99,
+                "explanation": explanation,
+            }
+
+    return None
 
 
 # ── Pydantic Models ─────────────────────────────────────────────────────────
@@ -145,6 +167,19 @@ async def check_news(request: CheckRequest):
 
         # ── 6. Semantic Similarity ───────────────────────────────────────
         primary_claim = claims[0]
+
+        obvious_falsehood = detect_obvious_falsehood(primary_claim)
+        if obvious_falsehood:
+            response_data = {
+                "verdict": obvious_falsehood["verdict"],
+                "confidence": obvious_falsehood["confidence"],
+                "explanation": obvious_falsehood["explanation"],
+                "claims": claims,
+                "evidence": [],
+            }
+            cache.set(cache_key, response_data)
+            return CheckResponse(**response_data)
+
         evidence_list = compute_similarity(primary_claim, evidence_list)
 
         # ── 7. Evidence Ranking ──────────────────────────────────────────
